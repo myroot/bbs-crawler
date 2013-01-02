@@ -46,7 +46,8 @@ def getLoginURLDataResponse(url):
     return response
 
 def extractArticle(board, page):
-    d = getLoginURLDataResponse('http://abyss.jaram.org/wrapper.php?type=txt&url=http://clien.career.co.kr/cs2/bbs/board.php?bo_table=%s&page=%d'%(board,page))
+    #d = getLoginURLDataResponse('http://abyss.jaram.org/wrapper.php?type=txt&url=http://clien.career.co.kr/cs2/bbs/board.php?bo_table=%s&page=%d'%(board,page))
+    d = getLoginURLDataResponse('http://relay-request.appspot.com/r?rq=http://clien.career.co.kr/cs2/bbs/board.php?bo_table=%s&page=%d'%(board,page))
     raw = d.read()
     idx = raw.find('<meta property="og:description" content="')
     if idx :
@@ -181,7 +182,7 @@ def insertImageinfo(board,id,path,imgmd5):
 
 def checkDuplicate(board,id):
     cur = db.cursor()
-    ret= cur.execute('select * from crdata_article where bbs=%s and no=%s', ('clien/%s'%(board), id))
+    ret= cur.execute('select id from crdata_article where bbs=%s and no=%s', ('clien/%s'%(board), id))
     cur.close()
     return ret
 

@@ -36,7 +36,7 @@ def getLoginURLDataResponse(url):
 
 def test_getComments(board, id):
     #d = getLoginURLDataResponse('http://clien.career.co.kr/cs2/bbs/board.php?bo_table=park&wr_id=6718653&page=5')
-    d = getLoginURLDataResponse('http://abyss.jaram.org/wrapper.php?type=txt&url=http://m.clien.career.co.kr/cs3/board?bo_table=%s&bo_style=view&wr_id=%s'%(board,id))
+    d = getLoginURLDataResponse('http://relay-request.appspot.com/r?rq=http://m.clien.career.co.kr/cs3/board?bo_table=%s&bo_style=view&wr_id=%s'%(board,id))
     raw = d.read()
     #print raw
     #chunk = '<body topmargin="0" leftmargin="0" >'
@@ -71,8 +71,8 @@ def test_getComments(board, id):
 if __name__=='__main__':
     print "Content-Type: text/plain\n";
     form = cgi.FieldStorage()
-    board= ''
-    id = ''
+    board= 'park'
+    id = '18036448'
     try:
         board = form['board'].value
         id = form['id'].value
