@@ -10,7 +10,7 @@ import cgi
 import sys
 import BeautifulSoup
 import pickle
-import md5
+import json
 
 def slrLogin(userid, passwd):
     values = {'user_id':userid,'password':passwd}   
@@ -32,11 +32,11 @@ def getArticleCommentID(board, id):
     d = getLoginURLDataResponse('http://www.slrclub.com/bbs/vx2.php?id=%s&no=%s'%(board, id))
     html = d.read()
 
-    idx = html.find('var cmrno=\'')
+    idx = html.find('data-cmrno=\"')
     if idx == -1:
         return ''
-    html = html[idx+len('var cmrno=\''):]
-    idx = html.find('\'')
+    html = html[idx+len('data-cmrno=\"'):]
+    idx = html.find('\"')
     commentid = html[:idx]
     return commentid
 
@@ -55,6 +55,7 @@ def getComments2(board, id):
 
 def getComments(board, id):
     commentid = getArticleCommentID(board,id)
+    #print 'comment id = '+commentid
     if commentid == '' :
         print '삭제된글입니다.'
         return
@@ -63,20 +64,32 @@ def getComments(board, id):
     request.add_header('Referer', 'http://www.slrclub.com/bbs/vx2.php?id=%s&no=%s'%(board,id))
     request.add_header('User-Agent','Mozilla/4.0 (compatible;)')
     d  =  urllib2.urlopen(request)
-    soup = BeautifulSoup.BeautifulSoup(d)
+    comments = json.load(d)
+    try:
+        for item in comments['c']:
+            item['name'] = item['name'].encode('utf-8')
+            item['memo'] = item['memo'].encode('utf-8')
+            print '<p>'
+            print '<b>%s</b>'%item['name']
+            print '<br>'
+            print item['memo']
+            print '</p>'
+    except Exception,e:
+        print e
+    #soup = BeautifulSoup.BeautifulSoup(d)
     #print soup.prettify()
-    comments = soup.findAll('table')
-    for comment in comments:
-        name = comment.find('span')
-        if not name :
-            continue
-        name = name.text.encode('utf-8')
-        txt = comment.find('td', attrs={'align':"left", 'class':"cmt_td"})
-        print '<p>'
-        print '<b>%s</b>'%name
-        print '<br>'
-        print txt
-        print '</p>'
+    #comments = soup.findAll('table')
+    #for comment in comments:
+    #    name = comment.find('span')
+    #    if not name :
+    #        continue
+    #    name = name.text.encode('utf-8')
+    #    txt = comment.find('td', attrs={'align':"left", 'class':"cmt_td"})
+    #    print '<p>'
+    #    print '<b>%s</b>'%name
+    #    print '<br>'
+    #    print txt
+    #    print '</p>'
 
         
 
@@ -85,12 +98,12 @@ if __name__=='__main__':
     form = cgi.FieldStorage()
     board= 'free'
     id = '15533022'
+    id = '25017117'
     try:
         board = form['board'].value
         id = form['id'].value
     except:
         print 'error'
-    
 
     getComments(board, id);
     

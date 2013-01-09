@@ -11,8 +11,8 @@ import sys
 import BeautifulSoup
 import pickle
 import MySQLdb
-import md5
 import dbpass
+import hashlib
 
 db = None
 def connectDB():
@@ -34,25 +34,21 @@ def getLoginURLDataResponse(url):
 def extractArticle(board):
     d = getLoginURLDataResponse('http://www.slrclub.com/')
     html = d.read()
-    html = html.decode('cp949')
     soup = BeautifulSoup.BeautifulSoup(html)
     articles = soup.find('div',id='issue-free').findAll('li')
     for item in articles:
         title = item.find('a').text
         link = item.find('a')['href']
         item_id = link.split('no=')[1]
-        
 
         r = checkDuplicate(board, item_id)
         if r > 0 :
             continue
 
-        (content ,has_image, has_youtube, has_flash, title, nick) = extractContents(board,item_id)
-        #print item_id, title       
+        (content ,has_image, has_youtube, has_flash, title, nick, reply) = extractContents(board,item_id)
         #title = title.encode('utf-8')
         link = 'http://www.slrclub.com'+link
         user = nick
-        reply = 0
         read = 0
         #print content
         insertArticle(link, board, item_id, title , content , user, reply, read, has_image, has_youtube, has_flash )
@@ -61,18 +57,17 @@ def extractArticle(board):
 def extractContents(board, no):
     d = getLoginURLDataResponse('http://www.slrclub.com/bbs/vx2.php?id=%s&no=%s'%(board,no))
     html = d.read()
-    html = html.decode('cp949')
     soup = BeautifulSoup.BeautifulSoup(html)
     content = soup.find('div', id='userct')
     if content == None :
         return ['error',0,0,0]
     
-    title = soup.find('td',{'width':'771','align':'left','colspan':7}).find('b').contents[0]
-    #print title
-    nick = soup.find('td',{'width':'351','align':'left'}).find('span').contents[0]
-    #print nick
+    title = soup.find('td',{'class':'sbj','colspan':7}).contents[0]
+    print title
+    nick = soup.find('td',{'class':'nick'}).find('span').contents[0]
+    print nick
+    reply_count = soup.find('span', {'id':'cmcnt'}).contents[0]
     
-    content = content.findAll('td')[1]
     imgs = content.findAll('img')
     img_count = 0;
     flash_count = 0
@@ -81,7 +76,6 @@ def extractContents(board, no):
         img_count+=1
         
         path = img.get('src')
-
 
         if path.find('slrclub') == -1 :
             continue
@@ -92,7 +86,7 @@ def extractContents(board, no):
         if new_path.startswith('http') :
             newTag['src']=new_path
         else:
-            newTag['src']='http://toors.cafe24.com//service/crawler/%s'%new_path
+            newTag['src']='http://toors.cafe24.com/service/crawler/%s'%new_path
         img.replaceWith(newTag)
     
     embeds = content.findAll('embed')
@@ -104,7 +98,7 @@ def extractContents(board, no):
         else:
             flash_count +=1
     
-    return [content, img_count , youtube_count, flash_count, title, nick ]
+    return [content, img_count , youtube_count, flash_count, title, nick, reply_count ]
 
 def saveImage(board, id , path):
     if not path :
@@ -133,7 +127,7 @@ def saveImage(board, id , path):
     f = open(new_path , 'w')
     imgdata = d.read()
     f.write(imgdata)
-    imgmd5 = md5.new(imgdata).hexdigest()
+    imgmd5 = hashlib.md5(imgdata).hexdigest()
     insertImageinfo(board,id,new_path,imgmd5)
     new_path = urllib.quote(new_path)
     return new_path.decode('utf-8')
